@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<meta charset='utf-8'>
+
+<html>
+
+<head>
+    <title>Suicide Map</title>
+
+    <!-- fetch the D3js library -->
+    <script src='https://d3js.org/d3.v7.min.js'></script>
+    <script src='https://d3js.org/d3-scale-chromatic.v1.min.js'></script>
+    <script src='https://d3js.org/d3-geo-projection.v2.min.js'></script>
+
+</head>
+
+<body>
+    <nav><a href="../Artefact_The Pentacrackers.html">Back</a></nav>
+    <section id="student-details">
+        <p>CASTELO PATRICIA (B1244676)</p>
+    </section>
+    <style>
+        /* Place items in the middle of the screen */
+        svg {
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+
+        #story {
+            width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            line-height: 30px;
+            color: darkslategray;
+            text-align: justify;
+        }
+        
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #student-details {
+            border: 1px solid black;
+            padding: 3px;
+            background-color: antiquewhite;
+            font-weight: bold;
+            font-size: 16pt;
+        }
+
+     </style>
+
+    <script>
+
+        const width = 1200;
+        const height = 800;
+        const paddingLeft = 30;
+        const paddingRight = 30;
+        const paddingTop = 30;
+        const paddingBottom = 30;
+
+        const graphWidth = width - (paddingLeft + paddingRight);
+        const graphHeight = height - (paddingTop + paddingBottom);
+
+
+        // create SVG
+        const svg = d3.select('body')
+            .append('svg')
+            .attr('width', width)
+            .attr('height', height)
+            .style('border', '1px solid black');
+
+        // Prepare map and projection
+        const path = d3.geoPath();
+
+        const projection = d3.geoMercator()
+            .scale(150)
+            .center([35, 40])
+            .translate([width / 2, height / 2]);
+
+        // Write SVG title
+        svg.append('text')
+            .attr('x', (width / 2))
+            .attr('y', 50)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '30px')
+            .text('Average Suicides per 100k Population (1984-2016)');
+
+        svg.append('text')
+            .attr('x', (width / 2))
+            .attr('y', 75)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '20px')
+            .text('Zoomable Map');
+
+        // Set data and colour scale
+        const data = new Map();
+        const colourScale = d3.scaleThreshold()
+            .domain([0, 0.3, 5, 10, 20, 25, 30, 35, 40])
+            .range(d3.schemeReds[9]);
+
+        // Place legend for the colour scale
+        // Legend code based on work by AmeliaBR from https://stackoverflow.com/questions/21838013/d3-choropleth-map-with-legend
+        const legend = svg.selectAll('g.legendEntry')
+            .data(colourScale.range().reverse())
+            .enter()
+            .append('g').attr('class', 'legendEntry');
+
+        legend
+            .append('rect')
+            .attr('x', width - 180)
+            .attr('y', function (d, i) {
+                return 200 + (i * 20);
+            })
+            .attr('width', 15)
+            .attr('height', 15)
+            .style('stroke', 'black')
+            .style('stroke-width', 1)
+            .style('fill', function (d) { return d; });
+
+        legend
+            .append('text')
+            .attr('x', width - 150)
+            .attr('y', function (d, i) {
+                return 200 + (i * 20);
+            })
+            .attr('dy', '0.7em') // aligns the text with the color boxes
+            .text(function (d, i) {
+                const extent = colourScale.invertExtent(d);
+                const format = d3.format('0.1f');  // number of decimal points
+                return format(+extent[0]) + ' - ' + format(+extent[1]);
+            });
+
+        svg.append('text')
+            .attr('x', width - 130)
+            .attr('y', 185)
+            .attr('text-anchor', 'middle')
+            .style('font-size', '15px')
+            .text('Legend: Suicides per 100k Pop');
+
+        // Map code based on work by Yan Holtz from https://d3-graph-gallery.com/graph/choropleth_hover_effect.html
+        // Load data for the map
+        Promise.all(
+            [
+                d3.json('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson'),
+                d3.csv('suicide_to_map.csv')
+            ])
+            .then(
+                function (values) {
+                    createMap(values[0], values[1]);
+                }
+            )
+            .catch(
+                function (error) {
+                    console.debug('ERROR: ' + error);
+                });
+
+        function createMap(topo, suicideDataset) {
+
+            // console.log(suicideDataset);
+
+            // Create tooltip
+            const tooltip = d3.select('body')
+                .append('div')
+                .append('rect')
+                .attr('id', '#chart')
+                .style('opacity', 0) // Set default to hidden
+                .classed('tooltip', true)
+                .style('background-color', 'black')
+                .style('border-radius', '5px')
+                .style('padding', '10px')
+                .style('color', 'white')
+                .style('position', 'absolute')
+                ;
+
+            // Tooltip to appear near mouse
+            const mouseEnter = (event, d) => {
+                tooltip.transition().duration(500);
+                tooltip
+                    .style('opacity', 1)
+                    .html(d.properties.name)
+                    .style('left', event.x + 15 + 'px')
+                    .style('top', event.y + 15 + 'px')
+            };
+
+            // Tooltip to hide
+            const mouseOut = (event, d) => {
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', 0);
+            };
+
+            // Draw the map
+            svg.append('g')
+                .selectAll('path')
+                .data(topo.features)
+                .enter()
+                .append('path')
+                // Map countries
+                .attr('d', d3.geoPath()
+                    .projection(projection)
+                )
+                // Assign colour according to average
+                .attr('fill', function (d) {
+                    // console.log(d)
+
+                    // extract country names from data
+                    const filtered = suicideDataset.filter(
+                        function (row) {
+                            return d.properties.name === row.country;
+                        })
+                    // console.log(filtered[0])
+
+                    // extract the average suicides per country
+                    const average = filtered[0] ? +filtered[0].average : -1; // Countries with no data will be lightly coloured
+                    // console.log(countryName).country
+
+                    return colourScale(average);
+                })
+                // Show border between countries
+                .style('stroke', 'white')
+                .attr('class', function (d) { return 'Country' })
+                .style('opacity', 1)
+                // Connect tooltip behaviour
+                .on('mouseover', mouseEnter)
+                .on('mouseleave', mouseOut)
+        }
+
+        // Zoom code based on https://www.geeksforgeeks.org/d3-js-zoom-function/
+        // Set zoom interaction
+        const zoom = d3.zoom()
+            .scaleExtent([1, 3]) // minimum and maximum zoom
+            .on('zoom', function (event) {
+                svg.selectAll('path').attr('transform', event.transform);
+            });
+
+        svg.call(zoom);
+
+    </script>
+
+    <div id='story'>
+        <p>
+            According to the CDC, suicide is the leading cause of death. Suicide rates vary by age, gender, where
+            someone lives, and other factors. The map shows the average of suicide count per 100,000 population in
+            different countries. By normalizing the suicide count per country in relation to their respective
+            populations, this reflects how severe the problem is in each country. Countries with no data are coloured
+            lightly in the map.We can see that Lithuania has the highest suicide rate according to population density.
+            Russia has the second highest rate, which is alarming given the size of the country. There is limited data
+            from Asian and African countries.
+        </p>
+        <p>
+            www.cdc.gov/suicide/facts/index.html
+        </p>
+    </div>
+
+</body>
+
+</html>

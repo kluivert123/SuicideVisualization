@@ -1,0 +1,42 @@
+*{
+    font-family: "Helvetica", Sans-serif;
+    }
+    
+/* setting the color of the h1 element */
+h1{color: darkgrey;}
+/* setting the color of the hovering element */
+circle:hover{
+    stroke: black;
+    stroke-width: 4px;
+  }
+ /* styling the map*/
+ #my_dataviz{
+  /* justify-content: centre; */
+  margin-left: auto;
+  margin-right: auto;
+  background-color: white;
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#student-details {
+    border: 1px solid black;
+    padding: 3px;
+    background-color: antiquewhite;
+    font-weight: bold;
+    font-size: 16pt;
+}
+
+#story{
+    width: 1200px;
+    align-items: left;
+    margin-top: 50px;
+    margin-left: 1%;
+    margin-right: 25%;
+    line-height: 30px;
+    color: darkslategray;
+    text-align: justify;
+}

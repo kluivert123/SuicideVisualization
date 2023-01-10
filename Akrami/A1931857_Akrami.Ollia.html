@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age Groups Treemap</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+    *{
+        font-family: "Helvetica", sans-serif;
+    }
+    
+    #student-details {
+            border: 1px solid black;
+            padding: 3px;
+            background-color: antiquewhite;
+            font-weight: bold;
+            font-size: 16pt;
+    }
+    #canvas{
+        min-height: 600px;
+        min-width: 1000px;
+    }
+    
+    body{
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: left;
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+    }
+    
+    svg{
+        background-color: lightgrey;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 8pt;
+        font-weight: bold;
+    }
+    
+    #main{
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%
+    }
+    
+    #canvas{
+            min-width: 1200px;
+            min-height: 800px;
+    }
+    
+    #legend{
+            min-height: 250px;
+            color: rgb(56, 58, 74);
+            font-size: 14px;
+            text-align: center;
+            max-width: 70%;
+    
+    }
+    
+    #tooltip_legend{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-left: 50px;
+        width: 200px;
+    }
+    
+    #story{
+        width: 1200px;
+        align-items: left;
+        margin-top: 50px;
+        margin-left: 22%;
+        margin-right: 25%;
+        line-height: 30px;
+        color: darkslategray;
+        text-align: justify;
+        }
+    
+</style>
+</head>
+
+<body>
+    <nav><a href="../Artefact_The Pentacrackers.html">Back</a></nav>
+    <section id="student-details">
+        <p>OLLIA AKRAMI (A1931857)</p>
+    </section>
+  <div id = "story">  <h3>Country Suicides By Age Group</h3></div>
+<div id="main">
+<svg id="canvas"></svg>
+  <!-- create a container for legend and the tooltip-->
+    <div id="tooltip_legend">
+        <div id="tooltip"></div>
+        <svg id = "legend">
+            <!-- create a text and colour corresponding to the colours used in the treemap-->
+            <g>
+                <rect x= "10" y="0" width="50", height= "30" fill="skyblue"> </rect>
+                <text x="70" y="20" fill = "black">5-14</text>
+            </g>
+            <g>
+                <rect x= "10" y="40" width="50", height= "30" fill="fuchsia"> </rect>
+                <text x="70" y="60" fill = "black">15-24</text>
+            </g>
+            <g>
+                <rect x= "10" y="80" width="50", height= "30" fill="aquamarine"> </rect>
+                <text x="70" y="100" fill = "black">25-34</text>
+            </g>
+            <g>
+                <rect x= "10" y="120" width="50", height= "30" fill="coral"> </rect>
+                <text x="70" y="140" fill = "black">35-54</text>
+            </g>
+            <g>
+                <rect x= "10" y="160" width="50", height= "30" fill="teal"> </rect>
+                <text x="70" y="180" fill = "black">55-74</text>
+            </g>
+            <g>
+                <rect x= "10" y="200" width="50", height= "30" fill="gold"> </rect>
+                <text x="70" y="220" fill = "black">75+</text>
+            </g>
+        </svg>
+    </div>
+</div>
+</body>
+<!-- The code has been inspired by the following link: -->
+<!-- reference https://www.notion.so/Visualize-Data-with-a-Treemap-Diagram-1192d4ebd1164277b769f74eaf7a5d26 -->
+<script>
+
+// initialize variables , note that countryData not been set since it will be set later in the code
+
+let countryData
+
+const countryDataUrl = "data_ollia.json"
+
+const canvas = d3.select("#canvas")
+
+const tooltip = d3.select("#tooltip")
+
+// create a treemap
+let drawTreeMap = () =>{
+
+    let hierarchy = d3.hierarchy (countryData, (node)=>{ // by using the dataset create a hierarchy usable for the treemap
+        return node["children"]
+    }).sum((node)=>{ //get the value so we base the tiles on this
+        return node["value"]
+    }).sort((node1, node2)=>{ // sort the values so the tiles are arranged by size
+        return node2["value"]-node1["value"]
+    })
+
+    
+    let createTreeMap = d3.treemap()
+                            .size([1200,800]) // size of the treemap
+                            .padding([0.5])// padding for each of the tiles
+                            
+
+    createTreeMap(hierarchy)
+
+    console.log(hierarchy.leaves()) // just for debugging we can view the data structure returned 
+    
+    let dataTiles = hierarchy.leaves() // pass the strucutre for drawing the tiles
+    //console.log(dataTiles)
+
+    // create individual tiles by appending a rectangle to a g tags based on data
+    let block = canvas.selectAll("g")
+            .data(dataTiles)
+            .enter()
+            .append("g")
+            //use the x0 and y0 from the data ( check the console log ) to draw each individual tile
+            .attr("transform", (suicides) => {
+                return "translate (" + suicides["x0"] + ","  +  suicides["y0"] + ")"
+            })
+           
+    // put a rectangle  then call then fill with colour
+    block.append("rect")
+            .classed("title",true)
+            .attr("fill", MakeColour)
+            .attr("data-name", (suicides) => {
+                    let country_name = suicides["data"]["name"]
+                    return suicides["data"]["name"]
+            })
+            //base the tile on the following items
+            //1. get the data category 
+            .attr("data-category", (suicides)=>{
+                return suicides["data"]["category"]
+            })
+            //2. get the value of the data
+            .attr("data-value", (suicides) => {
+                return suicides["data"]["value"]
+            })
+            //3. get the coordinate for x
+            .attr("width", (suicides) =>{
+                return suicides ["x1"] - suicides["x0"]
+            })
+            //4. get the coordinates for y
+            .attr("height", (suicides) =>{
+                return suicides ["y1"] - suicides["y0"]
+            })
+
+            // add a mouseover for the change of colour and the tooltip
+            .on("mouseover", (event,d)=>{
+                //set the node value to a different colour
+                event.srcElement.attributes[1].nodeValue = "lightgrey"
+               // console.log(event.srcElement.attributes[1].nodeValue)
+               // generate a tooltip 
+               tooltip.transition()
+               // set the visbility when mouse on
+                .style("visibility", "visible")  
+                //generate extra information for the tooltip to display     
+                tooltip.html(d.data["name"] + "<br>" 
+                + "Suicides : " 
+                + d.value + "<br>" + "Age Group: " 
+                + d.data["category"])
+                //.style("left", d.data + "px")     
+                //.style("top", d.data + "px");
+            })
+
+           
+            // once the mouse is off the tile, generate the original colour by passing the data back to MakeColor 
+            .on("mouseout", (event,d)=>{
+                event.srcElement.attributes[1].nodeValue = MakeColour(d)
+            })
+            
+
+
+
+            
+//finally set the text on each tile
+    block.append("text")
+            .text((suicides) => {
+                return suicides["data"]["name"]
+            })// set attributes for location of the text within the tile
+            .attr("x", 3)
+            .attr("y", 20)
+
+}
+ // set the colour of the tiles based on the category ( age group)
+ function MakeColour(suicides){
+                let ageGroup = suicides["data"]["category"]
+                if (ageGroup === "5-14"){return "skyblue"}
+                else if (ageGroup === "15-24"){return "fuchsia"}
+                else if (ageGroup === "25-34"){return "aquamarine"}
+                else if (ageGroup === "35-54"){return "coral"}
+                else if (ageGroup === "55-74"){return "teal"}
+                else if (ageGroup === "75+"){return "gold"}
+        }
+
+// fetch the data from a json file, which has been pre- preprocessed see data_processing_ollia.ipynb
+d3.json(countryDataUrl).then(
+    (data, error)=> {
+        if (error) {
+            console.log(error)
+        } else {
+            // set the data passes from the function to the global variable counrtryData 
+            countryData = data
+            //console.log(countryData)
+            // call the function drawTreeMap
+            drawTreeMap()
+        }
+    }
+)
+
+</script>
+
+<div id="story">
+The following chart type has been selected to give a visualisation on the different age groups as well as showing countries within each groups.
+The highest number of committed suicides are amongst 35-54 years olds, followed by 55-74 etc. 
+It is clear that Russian Federation, United States and Japan are leading countries in almost each age group. 
+The chart would benefit from future improvements by being able to click on each tile and drill down in each country. 
+</div>
+</html>

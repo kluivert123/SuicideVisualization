@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suicide Numbers Based on GDP Per Capita</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src='https://d3js.org/d3-scale-chromatic.v1.min.js'></script>
+    <style>
+        /* set the CSS */
+        *{
+        font-family: "Helvetica", Sans-serif;
+        }
+        
+        .line {
+            fill: none;
+            stroke: lightcoral;
+            stroke-width: 3px;
+        }
+    
+        .bar {
+            fill: skyblue;
+        }
+
+        .highlight {
+            fill: navy;
+        }
+    
+        .grid line {
+            stroke: lightgrey;
+            stroke-opacity: 0.4;
+            shape-rendering: crispEdges;
+        }
+    
+        .grid path {
+            stroke-width: 0;
+        }
+
+        .val{
+            font-size: small;
+            font-family: Helvetica;
+            font-weight: bold;
+            font-style: italic;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #student-details {
+            border: 1px solid black;
+            padding: 3px;
+            background-color: antiquewhite;
+            font-weight: bold;
+            font-size: 16pt;
+        }
+
+        #story{
+        width: 1330px;
+        align-items: left;
+        margin-top: 50px;
+        margin-left: 1%;
+        margin-right: 25%;
+        line-height: 30px;
+        color: darkslategray;
+        text-align: justify;
+        display: block;
+
+        }
+    </style>
+    
+</head>
+
+<body>
+    <nav><a href="../Artefact_The Pentacrackers.html">Back</a></nav>
+    <section id="student-details">
+        <p>GRACE AKEDE (B1348763)</p>
+    </section>
+
+    <script>
+       
+      
+    d3.csv("2015SuicideByGDP.csv").then(buildGraph);
+                // .catch(errorHandler);
+
+    function buildGraph(csvdata) {
+        console.log(csvdata);
+                
+        const width = 1330;
+        const height = 800;
+        const paddingTop = 50;
+        const paddingBottom = 150;
+        const paddingLeft = 80;
+        const paddingRight = 80;
+
+        const graphWidth = width - (paddingLeft + paddingRight);
+        const graphHeight = height - (paddingBottom + paddingTop);
+
+                
+        const svg = d3.select("body")
+                            .append("svg")
+                            .attr("width",width)
+                            .attr("height",height)
+                            .append("g")
+
+        
+        //Adding title to the graph
+        svg.append('text')
+            .attr('transform', 'translate(100,0)')
+            .attr('x', 450)
+            .attr('y', 30)
+            .attr('font-size', '20px')
+            .attr('font-weight', 'bold')
+            .text('Suicide vs GDP Per Capita, 2015')
+
+        //Adding the titles to the axes
+        //Adding the title to the yAxis for GDP
+        svg.append('g')
+            .attr('transform', `translate(${paddingLeft/3}, ${graphHeight/1.5})rotate(-90)`)
+            .append('text')
+            .text('GDP Per Capita ($)')
+            .style('font-size','20')
+
+        //Adding the title to the yAxis for Suicide
+        svg.append('g')
+            .attr('transform', `translate(${paddingLeft+graphWidth+ paddingRight/1.3}, ${graphHeight/2.5})rotate(90)`)
+            .append('text')
+            .text('Suicide Numbers')
+            .style('font-size','20')
+
+        //Adding the title to the xAxis 
+        svg.append('g')
+            .attr('transform', `translate(${graphWidth/2}, ${graphHeight+paddingTop+ paddingBottom/1.4})`)
+            .append('text')
+            .text('Country')
+            .style('font-size','20')
+   
+            
+         /* convenience - extract the labels and values from the data */
+        const labels = csvdata.map(function(d){return d.Country}); 
+        const GDP_values = csvdata.map(function(d){return parseInt(d.GDP_Per_Capita);});
+        const Suicide_values = csvdata.map(function(d){return parseInt(d.Suicides_No);});
+        
+        console.log(labels);
+        console.log(GDP_values);
+    
+
+        //  /* find the maximum value in the GDP Column of the dataset */
+        const maximumValue = d3.max(GDP_values);
+        console.log("array being fed to d3.max: " + GDP_values);
+        console.log("what d3.max() is returning: " + d3.max(GDP_values));
+
+        //  /* find the maximum value in the Suicide Column of the dataset */
+        const maximumValue2 = d3.max(Suicide_values);
+        console.log("array being fed to d3.max: " + Suicide_values);
+        console.log("what d3.max() is returning: " + d3.max(Suicide_values));
+
+
+
+        /* you want both the minimum and maximum in the GDP Column - use d3.extent() */
+        const extentValues = d3.extent(GDP_values); // returns an array of 2 elements.
+        console.log("array being fed to d3.extent: " + extentValues);
+
+        /* you want both the minimum and maximum in the Suicide Column - use d3.extent() */
+        const extentValues2 = d3.extent(Suicide_values); // returns an array of 2 elements.
+        console.log("array being fed to d3.extent: " + extentValues2);
+
+        /* Create the scales for GDP*/
+        const yScale = d3.scaleLinear()
+                            .domain([0, maximumValue])
+                             .range([graphHeight, 0])
+                             .nice();
+
+        /* Create the scales for Suicide_Numbers*/
+        const yScale2 = d3.scaleLinear()
+                            .domain([0, maximumValue2])
+                             .range([graphHeight, 0])
+                             .nice();
+                             
+         /* Create the scales for Country*/
+        const xScale = d3.scaleBand()
+                                .domain(labels)
+                                .range([0, graphWidth])
+                                .paddingInner(0.25)
+                                .paddingOuter(0.15)
+                                .align(0.5)
+                                .round(true);
+
+
+        /* Create a group to contain all the graph elements */
+        const graphGroup = svg.append('g')
+                                .attr('transform', `translate(${paddingLeft}, ${paddingTop})`);
+
+        /* For convenience, create a group for the axes */
+        const axesGroup = graphGroup.append('g');
+
+        /* Axes */
+        const xAxis = d3.axisBottom(xScale);
+        
+        const yAxis = d3.axisLeft(yScale) //for GDP
+
+        const yAxis2 = d3.axisRight(yScale2) //for Suicide
+
+
+        /* Adding labels and styling to the axes */
+        //Adding labels to the xAxis
+        axesGroup.append('g')
+                    .attr('transform', `translate(${0}, ${graphHeight})`)
+                    .call(xAxis)
+                    .selectAll("text")
+                    .attr("transform", "translate(-10,0)rotate(-50)")
+                    .style('font-size','12')
+                    .style("text-anchor", "end");
+
+        //Adding labels to the yAxes
+        axesGroup.append('g')
+                    .call(yAxis) //for GDP
+                    .style('font-size','12')
+                    .style('stroke','skyblue')
+
+        axesGroup.append('g')
+                    .attr('transform', `translate(${graphWidth}, ${0})`)
+                    .call(yAxis2) //for Suicide
+                    .style('font-size','12')  
+                    .style('stroke','lightcoral')
+                  
+
+       //Adding the Gridlines
+        // add the X gridlines
+            graphGroup.append('g')
+                .attr('class', 'grid')
+                .attr('transform', `translate(0, ${graphHeight})`)
+                .call(
+                    d3.axisBottom(xScale)
+                        .tickSize(-graphHeight) //make the ticks really long so they act like gridlines
+                        .tickFormat('') //prevent a second set of labels being added. The x axis already has these labels
+                );
+
+        // add the Y gridlines
+        graphGroup.append('g')
+                    .classed('grid', true)
+                    .call(
+                    d3.axisLeft(yScale)
+                        .tickSize(-graphWidth) //make the ticks really long so they act like gridlines
+                        .tickFormat('') //prevent a second set of labels being added. The y axis already has these labels
+                );                             
+
+       /* Create the bar graph */
+       graphGroup.selectAll('rect')
+                .data(GDP_values)
+                .enter()
+                .append('rect')
+                .classed('bar', true)
+                .on('mouseover', onMouseOver) //Add listener for the mouseover event
+                .on('mouseout', onMouseOut) //Add listener for the mouseout event
+                
+                .attr('x', function(GDPPerCapita, index) {
+                console.log(GDPPerCapita, index,labels[index]);
+                    return xScale(labels[index])
+                })
+                
+                .attr('y', function(GDPPerCapita, index) {
+                    return yScale(GDPPerCapita)
+                })
+                .transition()
+                .duration(2000)
+                .attr('height', function(GDPPerCapita) {
+                    return graphHeight - yScale(GDPPerCapita)
+                })
+                .attr('width', xScale.bandwidth())
+                .attr("fill", "#69b3a2");
+
+
+        /* Create the line graph */
+        graphGroup.append ('path')
+            .datum(Suicide_values) 
+            .attr('d',d3.line()
+                    .x(0)
+                    .y(0))
+            .classed('line', true)
+            .transition()
+            .duration(4000)  
+            .attr('d',
+                d3.line()
+                    .x(
+                    function(SuicidesNo, index) {
+                    console.log(SuicidesNo, index, labels[index], xScale(labels[index]));
+                        return xScale(labels[index])
+                    })
+                    .y(
+                        function(SuicidesNo, index) {
+                        console.log(SuicidesNo, index, labels[index], yScale2(SuicidesNo));
+                            return yScale2(SuicidesNo)
+                    }))
+                  
+        
+        // mouseout event handler function
+        function LineMouseOver() {
+            const line = d3.select(this);
+            line
+                .classed('highlight',true)
+        
+        }
+        function onMouseOut(event) {
+            const thisBar = d3.select(this);
+            
+
+        // use the text label class to remove label on mouseout
+            thisBar
+                .classed('highlight', false)
+                .transition()     // adds animation
+                .duration(300)
+                .attr('height', function(GDPPerCapita) {
+                   return graphHeight - yScale(GDPPerCapita)
+                })
+                .attr('width', xScale.bandwidth())
+
+                
+            d3.selectAll('.val')
+               .remove()
+        }
+
+        // mouseover event handler function
+        function onMouseOver(event) {
+            const thisBar = d3.select(this);
+            const datum = thisBar.datum(); // <--- this will give the single value joined to the bar
+    
+            thisBar
+            .classed('highlight',true)
+                .transition()     // adds animation
+                .duration(400)
+                .attr('height', function(GDPPerCapita) {
+                   return graphHeight - yScale(datum)
+                })
+
+                    
+            graphGroup
+                .append('text')
+                .attr('class','val')
+                .classed('val', true)
+                .attr('x', function () {
+                return thisBar.attr('x') - xScale.bandwidth()/1.2;
+                })
+                .attr('y', function () {
+                return thisBar.attr('y') - 15;
+                })
+                .text(function () {
+                return ['$' + thisBar.datum()]  ;  // Value of the text
+                 });
+                 
+        }
+  
+
+ }
+
+    </script>
+    <div id="story">
+            <p>
+                The Gross Domestic Product (GDP) Per Capita is the measure by which a country's standard of living and economical growth/development is determined. 
+                Since suicide is usually linked to depression, one might then imagine that there might be some sort of negative correlation between the standard of living/economic growth of a country and the number of suicides committed in that country. 
+                The chart below is meant to put some context to that hypothesis.   Some form of correlation can be 
+                seen between the two variables for some countries (like Luxembourg and Singapore with high GDP Per capita and low suicide rates) but not in all. The United States, for example, had the highest number of suicides in 2015 despite being the 8th most economically developed country in that same year. This suggests the need for further studies and analysis of
+                other influencing factors.
+
+            </p>
+        </div> 
+</body>
+</html>

@@ -1,0 +1,433 @@
+<!-- Infographic Chart: Suicide by year and Gender
+
+Story:
+Suicide is a tragic incident. Death by suicide is an extremely complex issue that causes pain to people every year around the world.
+The objetive of this infographic chart is to visualize the number of suicide based on gender by year which can be used to prevent suicide rate. 
+The infographic chart gives a balance between information and graphics. So, this chart is ideal when two different groups of data need 
+to be visualized together.​ The chart presents that suicide is more common in men than women in each year. It is unfortunate that the number of 
+suicide in men is over twice as high as in women.​
+
+-->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="L3 - Colour picker ">
+    <title>Infographic Chart: Suicide by year and gender</title>
+
+     <!-- fetch the D3js library -->
+    <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
+    <script src="https://unpkg.com/d3-v6-tip@1.0.9/build/d3-v6-tip.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bumbeishvili/d3-tip-for-v6@4/d3-tip.min.css">
+    
+    <svg width="2000" height="380"></svg>
+  </head>
+
+  <body>
+    <nav><a href="../Artefact_The Pentacrackers.html">Back</a></nav>
+    <section id="student-details">
+        <p>RADIA CHOWDHURY (W9559681)</p>
+    </section>
+
+    <style>
+
+        /* Style for tooltip */
+        .d3-tip {
+            line-height: 1;
+            font-weight: lighter;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 2px;
+        }
+
+        /* Creates a small triangle extender for the tooltip */
+        .d3-tip:after {
+            box-sizing: border-box;
+            display: inline;
+            font-size: 5px;
+            width: 100%;
+            line-height: 1;
+            color: rgba(0, 0, 0, 0.8);
+            content: "\25BC";
+            position: absolute;
+            text-align: center;
+        }
+
+        /* Border for the story */
+        .story_border {
+            border-style:solid;
+            border-color:rgb(169, 166, 166);
+            border-radius: 0.1px;
+            border-width: 0.05px;
+        }
+
+        #story{
+        align-items: left;
+        margin-top: 50px;
+        margin-left: 1%;
+        margin-right: 25%;
+        line-height: 30px;
+        color: darkslategray;
+        text-align: justify;
+        }
+
+    </style>
+
+    <!-- Radio Buttons -->
+    <br><br>Sex: 
+    <input id="radio1" type="radio" name="group" value="all" checked='true'/>All
+    <input id="radio2" type="radio" name="group" value="male"/>Male
+    <input id="radio3" type="radio" name="group" value="female"/>Female
+
+    <script>
+
+        let yScale;
+        let x0;
+        let x1;
+        let tip;
+        let subGroupKeys;
+
+        // Fetch Json data
+        d3.json("suicide_by_year_and_sex_dataset.json")
+                .then(buildGraph)
+                .catch(errorHandler);
+
+      
+        function buildGraph(jsondata){
+                finalData = jsondata;
+
+                /* convenience - extract the labels and values from the data */
+                const labels = jsondata.map(function(d) {return d.year});
+                const male_suicide_no = jsondata.map(function(d) {return d.male});
+                const female_suicide_no = jsondata.map(function(d){return d.female});
+        
+               /* find the maximum value in the data */
+                const male_maximumValue = d3.max(male_suicide_no);
+                const female_maximumValue = d3.max(female_suicide_no);
+                const maximumValue = d3.max([male_maximumValue, female_maximumValue]);
+
+                // create SVG
+                svg = d3.select("svg");
+                const margin = {top: 100, right: 20, bottom: 60, left: 60};
+                const width = +svg.attr("width") - margin.left - margin.right;
+                const height = +svg.attr("height") - margin.top - margin.bottom;
+                svg.style('border', '1px solid black');
+                const container = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                
+
+                //Default Values
+                subGroupKeys = ["male", "female"];
+
+                if(document.getElementById('radio1').checked){
+                    subGroupKeys = ["male", "female"];
+                }
+                if(document.getElementById('radio2').checked){
+                    subGroupKeys = ["male"];
+
+                }
+                if(document.getElementById('radio3').checked){
+                    subGroupKeys = ["female"];
+                }
+                
+                // The scale spacing the groups
+                x0 = d3.scaleBand()
+                    .domain(finalData.map(d => d.year))
+                    .rangeRound([0, width])
+                    .paddingInner(0.1);
+
+                // The scale for spacing each group's bar
+                x1 = d3.scaleBand()
+                        .domain(["male", "female"])
+                        .rangeRound([0, x0.bandwidth()])
+                        .padding(0.05);
+
+                 yScale = d3.scaleLinear()
+                .domain([0, maximumValue])
+                .range([height, 0]);
+                      
+                //Append both, groups and bars
+                const groups = container.append('g')
+                .selectAll('g')
+                .data(finalData, d => d.year)
+                .join("g")
+                .attr("transform", (d) => "translate(" + x0(d.year) + ",0)");
+
+
+                // Title
+                container
+                    .append('text')
+                    .attr('x', (width / 2))
+                    .attr('y', -(margin.top / 2))
+                    .attr('text-anchor', 'middle')
+                    .attr("font-weight", 500)
+                    .style('font-size', '20px')
+                    .text('Infographic Chart: Suicide by Year and Gender');
+
+                // Add legend
+                container
+                    .append('text')
+                    .attr('x', (width / 2)-50)
+                    .attr('y', -(margin.top / 2)+20)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '15px')
+                    .text('Sex: ')
+
+                container
+                        .append('rect')
+                        .attr('x', width/2 -30)
+                        .attr('y', -(margin.top / 2)+8)
+                        .attr('width', 15)
+                        .attr('height', 15)
+                        .style('fill', '#118DFF');
+
+                container
+                        .append('text')
+                        .attr('x', (width / 2)+5)
+                        .attr('y', -(margin.top / 2)+20)
+                        .attr('text-anchor', 'middle')
+                        .style('font-size', '15px')
+                        .text('Male');
+
+                container
+                        .append('rect')
+                        .attr('x', width/2 +25)
+                        .attr('y', -(margin.top / 2)+8)
+                        .attr('width', 15)
+                        .attr('height', 15)
+                        .style('fill', '#FF0066');
+
+                container
+                        .append('text')
+                        .attr('x', (width / 2)+65)
+                        .attr('y', -(margin.top / 2)+20)
+                        .attr('text-anchor', 'middle')
+                        .style('font-size', '15px')
+                        .text('Female');
+
+                    
+                // Create a tool-tip
+                tip =  d3.tip()
+                          .attr('class', 'd3-tip')
+                          .offset([-17, 0])
+                          .html(function (event, d) {
+                              return `<strong>Sex: </strong><span style='color:orangered'>${d.key}</span></br>
+                              <strong>Suicide No: </strong><span style='color:orangered'>${d.value}</span>`;
+                          });
+
+
+                groups.call(tip);
+
+                //Reference for Adding Image: http://jsfiddle.net/cyril123/0xo38x8q/7/
+                //Reference for Adding Image: https://www.demo2s.com/javascript/javascript-d3-js-add-images-inside-a-bar-of-a-bar-chart.html
+                //Add Image
+                const img = svg.append("defs")
+                        .append("pattern")
+                        .attr("id", "bg")
+                        .attr("height","100%")
+                        .attr("width","100%")
+                        .attr("patternContentUnits","objectBoundingBox")
+                        .append("image")
+                        .attr("height",1)
+                        .attr("width",1)
+                        //.attr("preserveAspectRatio","xMidYMid meet")
+                        .attr("xlink:href", "Image/blue_male.png");
+
+                    const img2 = svg.append("defs")
+                        .append("pattern")
+                        .attr("id", "bg2")
+                        .attr("height","100%")
+                        .attr("width","100%")
+                        .attr("patternContentUnits","objectBoundingBox")
+                        .append("image")
+                        .attr("height",1)
+                        .attr("width",1)
+                        .attr("xlink:href", "Image/pink_female.png");
+
+                    const img3 = svg.append("defs")
+                        .append("pattern")
+                        .attr("id", "bg3")
+                        .attr("height","100%")
+                        .attr("width","100%")
+                        .attr("patternContentUnits","objectBoundingBox")
+                        .append("image")
+                        .attr("height",1)
+                        .attr("width",1)
+                        .attr("xlink:href", "Image/dark_blue_male.png");
+
+                    const img4 = svg.append("defs")
+                        .append("pattern")
+                        .attr("id", "bg4")
+                        .attr("height","100%")
+                        .attr("width","100%")
+                        .attr("patternContentUnits","objectBoundingBox")
+                        .append("image")
+                        .attr("height",1)
+                        .attr("width",1)
+                        .attr("xlink:href", "Image/red_female.png");
+                                
+                //append x axis
+                container.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x0))
+                    .append("text")
+                    .attr("x", width/2)
+                    .attr("y", yScale(yScale.ticks().pop()) + 30)
+                    .attr("dy", "0.32em")
+                    .attr("fill", "#000")
+                    .attr("font-weight", "bold")
+                    .attr("text-anchor", "start")
+                    .text("Year");
+
+                //append y axis
+                container.append("g")
+                    .attr("class", "y axis")
+                    .call(d3.axisLeft(yScale))
+                    .append("text")
+                    .attr("x", -50)
+                    .attr("y", yScale(yScale.ticks().pop())- 20)
+                    .attr("dy", "0.32em")
+                    .attr("fill", "#000")
+                    .attr("font-weight", "bold")
+                    .attr("text-anchor", "start")
+                    .text("Suicide Number");
+
+                    //Plotting the chart
+                    plot(groups);
+                    d3.selectAll("input").on("click",  function plot(){
+
+                                                    if(document.getElementById('radio1').checked){
+                                                        subGroupKeys = ["male", "female"];
+                                                    }
+                                                    if(document.getElementById('radio2').checked){
+                                                        subGroupKeys = ["male"];
+
+                                                    }
+                                                    if(document.getElementById('radio3').checked){
+                                                        subGroupKeys = ["female"];
+                                                    }
+                                                    console.log(subGroupKeys)
+
+                                                    //define groups bars, one per sub group 
+                                                    let bars = groups
+                                                    .selectAll("rect")
+                                                    .data(d => subGroupKeys.map(key => ({ key, value: d[key], A: d.year })), (d) => "" + d.year + "_" + d.key)
+                                                    .join("rect")
+                                                    .classed('bar', true)
+                                                        .on('mouseover.bar', onMouseOver) //Add listener for the mouseover event
+                                                        .on('mouseover.text', tip.show)    //Add listener for the tooltip
+                                                        .on('mouseout.bar', onMouseOut)   //Add listener for the mouseout event
+                                                        .on('mouseout.text', tip.hide)      //Add listener for the tooltip
+                                                    .attr("fill", function(d){if (d.key == "male") {return "url(#bg)"} else{return "url(#bg2)"} })
+                                                    .attr("x", d => x1(d.key))
+                                                    .attr("width", (d) => x1.bandwidth())
+                                                    .attr('y', yScale(0))
+
+                                                    .transition()
+                                                            .ease(d3.easeLinear)
+                                                            .duration(600)
+                                                            .delay(function (d, i) {
+                                                                return i * 50;
+                                                            })
+                                                            .attr('y',  (d) => Math.min(yScale(0), yScale(d.value)))
+                                                            .attr('height', (d) => Math.abs(yScale(0) - yScale(d.value)));
+                                                    } );
+                                        
+
+
+                // Set zoom function                                    
+                const zoom = d3.zoom()
+                .scaleExtent([-1, 7]) // minimum and maximum zoom
+                .on('zoom', function (event) {
+                    svg.selectAll('container').attr('transform', event.transform);
+                });
+
+                svg.call(zoom);
+                                    
+
+            }
+            
+
+            // Reference for grouped bar plot: https://d3-graph-gallery.com/graph/barplot_grouped_basicWide.html
+            // Reference for passing multiple function on hover: https://stackoverflow.com/questions/44978574/d3-js-passing-in-multiple-functions-on-hover
+            function plot(groups){              
+                //define groups bars, one per sub group 
+                let bars = groups 
+                .selectAll("rect")
+                .data(d => subGroupKeys.map(key => ({ key, value: d[key], A: d.year })), (d) => "" + d.year + "_" + d.key)
+                .join("rect")
+                .classed('bar', true)
+                    .on('mouseover.bar', onMouseOver) //Add listener for the mouseover event
+                    .on('mouseover.text', tip.show)   //Add listener for the tooltip
+                    .on('mouseout.bar', onMouseOut)   //Add listener for the mouseout event
+                    .on('mouseout.text', tip.hide)     //Add listener for the tooltip
+                .attr("fill", function(d){if (d.key == "male") {return "url(#bg)"} else{return "url(#bg2)"} })
+                .attr("x", d => x1(d.key))
+                .attr("width", (d) => x1.bandwidth())
+                .attr('y', yScale(0))
+                
+               
+                // Add Transition to the chart
+                .transition()
+                        .ease(d3.easeLinear)
+                        .duration(600)
+                        .delay(function (d, i) {
+                            return i * 50;
+                        })
+                        .attr('y',  (d) => Math.min(yScale(0), yScale(d.value)))
+                        .attr('height', (d) => Math.abs(yScale(0) - yScale(d.value)));
+            }
+
+
+        // mouseout event handler function
+        function onMouseOut(event) {
+            const thisBar = d3.select(this);
+
+            thisBar
+                .attr("fill", function(d){if (d.key == "male") {return "url(#bg)"} else{return "url(#bg2)"} })
+                .transition()     // adds animation
+                .duration(400)
+        }
+
+        // mouseover event handler function
+        function onMouseOver(event) {
+            const thisBar = d3.select(this);
+            const datum = thisBar.datum(); // <--- this will give the single value joined to the bar
+
+            thisBar
+                .attr("fill", function(d){if (d.key == "male") {return "url(#bg3)"} else{return "url(#bg4)"} })
+                .transition()     // adds animation
+                .duration(400)
+        }
+
+            function errorHandler(error) {
+                alert("Error, no data");
+            }
+
+    </script>
+
+<div id="story">
+    <!-- Add a story that tells about the chart -->
+    <p class="story_border" style="width: 700px ; padding: 10px">
+        Suicide is a tragic incident. Death by suicide is an extremely complex issue that causes pain to people every year around the world.
+        The objetive of this infographic chart is to visualize the number of suicide based on gender by year which can be used to prevent suicide rate.
+        The infographic chart gives a balance between information and graphics. So, this chart is ideal when two different groups of data need 
+        to be visualized together.​
+        The chart presents that suicide is more common in men than women in each year. It is unfortunate that the number of 
+        suicide in men is over twice as high as in women.</p>
+  </div>
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
